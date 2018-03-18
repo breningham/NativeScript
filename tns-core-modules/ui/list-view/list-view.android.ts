@@ -19,8 +19,6 @@ interface ItemClickListener {
     new (owner: ListView): android.widget.AdapterView.OnItemClickListener;
 }
 
-
-
 let ItemClickListener: ItemClickListener;
 
 function initializeItemClickListener(): void {

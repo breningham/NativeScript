@@ -289,7 +289,7 @@ export class ListView extends ListViewBase {
         const indexes: NSIndexPath[] = Array.from(this._ios.indexPathsForVisibleRows); 
 
         for ( const visIndex of indexes ) {
-            if ( visIndex.row == itemIndex ) {
+            if ( visIndex.row === itemIndex ) {
                 return true;
             }  
         }
