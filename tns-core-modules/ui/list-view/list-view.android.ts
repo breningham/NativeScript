@@ -47,8 +47,6 @@ export class ListView extends ListViewBase {
     nativeViewProtected: android.widget.ListView;
     private _androidViewId: number = -1;
 
-    public visibleIndexes = [];
-
     public _realizedItems = new Map<android.view.View, View>();
     public _realizedTemplates = new Map<string, Map<android.view.View, View>>();
 
