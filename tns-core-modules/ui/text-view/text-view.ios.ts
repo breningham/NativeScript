@@ -8,7 +8,6 @@ import {
     CSSType
 } from "../editable-text-base";
 
-import { ios } from "../../utils/utils";
 import { profile } from "../../profiling";
 
 export * from "../editable-text-base";
@@ -133,13 +132,13 @@ export class TextView extends EditableTextBase implements TextViewDefinition {
             return;
         }
 
-        if (text !== null && text !== undefined && text !== '') {
+        if (text !== null && text !== undefined && text !== "") {
             this.showText();
-        } else if (!this._isEditing && hint !== null && hint !== undefined && hint !== '') {
+        } else if (!this._isEditing && hint !== null && hint !== undefined && hint !== "") {
             this.showHint(hint);
         } else {
             this._isShowingHint = false;
-            this.nativeViewProtected.text = '';
+            this.nativeViewProtected.text = "";
         }
     }
 
@@ -175,7 +174,7 @@ export class TextView extends EditableTextBase implements TextViewDefinition {
         this._isShowingHint = true;
         this._refreshColor();
 
-        const hintAsString: string = (hint === null || hint === undefined) ? '' : hint.toString();
+        const hintAsString: string = (hint === null || hint === undefined) ? "" : hint.toString();
         nativeView.text = hintAsString;
     }
 

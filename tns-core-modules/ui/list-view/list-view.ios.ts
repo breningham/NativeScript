@@ -1,14 +1,11 @@
-﻿import { ScrollEventData } from "../scroll-view";
-import { ItemEventData } from ".";
+﻿import { ItemEventData } from ".";
 import {
     ListViewBase, View, KeyedTemplate, Length, Observable, Color,
     separatorColorProperty, itemTemplatesProperty, iosEstimatedRowHeightProperty, layout, EventData
 } from "./list-view-common";
 import { StackLayout } from "../layouts/stack-layout";
 import { ProxyViewContainer } from "../proxy-view-container";
-import { ios } from "../../utils/utils";
 import { profile } from "../../profiling";
-import { device } from "../../platform";
 
 export * from "./list-view-common";
 
@@ -197,7 +194,7 @@ class UITableViewRowHeightDelegateImpl extends NSObject implements UITableViewDe
             return tableView.estimatedRowHeight;
         }
 
-        return owner._effectiveRowHeight;
+        return layout.toDeviceIndependentPixels(owner._effectiveRowHeight);
     }
 }
 
@@ -281,8 +278,8 @@ export class ListView extends ListViewBase {
         }
     }
 
-    public isItemAtIndexVisible( itemIndex: number ): boolean {
-        const indexes: NSIndexPath[] = Array.from(this._ios.indexPathsForVisibleRows); 
+    public isItemAtIndexVisible(itemIndex: number): boolean {
+        const indexes: NSIndexPath[] = Array.from(this._ios.indexPathsForVisibleRows);
         return indexes.some(visIndex => visIndex.row === itemIndex);
     }
 
@@ -295,7 +292,7 @@ export class ListView extends ListViewBase {
     }
 
     public _onRowHeightPropertyChanged(oldValue: Length, newValue: Length) {
-        const value = this._effectiveRowHeight;
+        const value = layout.toDeviceIndependentPixels(this._effectiveRowHeight);
         const nativeView = this._ios;
         if (value < 0) {
             nativeView.rowHeight = UITableViewAutomaticDimension;

@@ -21,6 +21,8 @@ export function loadExamples() {
     examples.set("tab-view-icons", "tab-view/tab-view-icon");
     examples.set("tab-view-icon-change", "tab-view/tab-view-icon-change");
     examples.set("text-transform", "tab-view/text-transform");
-    examples.set("tab-view-bottom-position","tab-view/tab-view-bottom-position");
+    examples.set("tab-view-bottom-position", "tab-view/tab-view-bottom-position");
+    examples.set("issue-5470", "tab-view/issue-5470");
+    examples.set("tab-view-tab-text-font-size", "tab-view/tab-view-tab-text-font-size");
     return examples;
 }

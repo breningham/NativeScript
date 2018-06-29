@@ -126,8 +126,6 @@ global.registerModule("fetch", () => require("fetch"));
     }
 }
 
-const __tnsGlobalMergedModules = new Map<string, boolean>();
-
 function registerOnGlobalContext(name: string, module: string): void {
 
     Object.defineProperty(global, name, {
@@ -208,7 +206,7 @@ export function Deprecated(target: Object, key?: string | symbol, descriptor?: a
         var originalMethod = descriptor.value;
 
         descriptor.value = function (...args: any[]) {
-            console.log(`${key} is deprecated`);
+            console.log(`${key.toString()} is deprecated`);
 
             return originalMethod.apply(this, args);
         }
@@ -227,7 +225,7 @@ export function Experimental(target: Object, key?: string | symbol, descriptor?:
         var originalMethod = descriptor.value;
 
         descriptor.value = function (...args: any[]) {
-            console.log(`${key} is experimental`);
+            console.log(`${key.toString()} is experimental`);
 
             return originalMethod.apply(this, args);
         }

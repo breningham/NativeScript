@@ -1,18 +1,12 @@
 ﻿/**
  * iOS specific dialogs functions implementation.
  */
-
+import { View, ios as iosView } from "../core/view";
 import { ConfirmOptions, PromptOptions, PromptResult, LoginOptions, LoginResult, ActionOptions } from ".";
-import { getCurrentPage, getLabelColor, getButtonColor, getTextFieldColor, isDialogOptions, inputType, ALERT, OK, CONFIRM, CANCEL, PROMPT, LOGIN } from "./dialogs-common";
+import { getCurrentPage, getLabelColor, getButtonColors, getTextFieldColor, isDialogOptions, inputType, ALERT, OK, CONFIRM, CANCEL, PROMPT, LOGIN } from "./dialogs-common";
 import { isString, isDefined, isFunction } from "../../utils/types";
 
 export * from "./dialogs-common";
-
-enum allertButtons {
-    cancel = 1 << 0,
-    neutral = 1 << 1,
-    ok = 1 << 2,
-}
 
 function addButtonsToAlertController(alertController: UIAlertController, options: ConfirmOptions, callback?: Function): void {
     if (!options) {
@@ -20,19 +14,19 @@ function addButtonsToAlertController(alertController: UIAlertController, options
     }
 
     if (isString(options.cancelButtonText)) {
-        alertController.addAction(UIAlertAction.actionWithTitleStyleHandler(options.cancelButtonText, UIAlertActionStyle.Default, (arg: UIAlertAction) => {
+        alertController.addAction(UIAlertAction.actionWithTitleStyleHandler(options.cancelButtonText, UIAlertActionStyle.Default, () => {
             raiseCallback(callback, false);
         }));
     }
 
     if (isString(options.neutralButtonText)) {
-        alertController.addAction(UIAlertAction.actionWithTitleStyleHandler(options.neutralButtonText, UIAlertActionStyle.Default, (arg: UIAlertAction) => {
+        alertController.addAction(UIAlertAction.actionWithTitleStyleHandler(options.neutralButtonText, UIAlertActionStyle.Default, () => {
             raiseCallback(callback, undefined);
         }));
     }
 
     if (isString(options.okButtonText)) {
-        alertController.addAction(UIAlertAction.actionWithTitleStyleHandler(options.okButtonText, UIAlertActionStyle.Default, (arg: UIAlertAction) => {
+        alertController.addAction(UIAlertAction.actionWithTitleStyleHandler(options.okButtonText, UIAlertActionStyle.Default, () => {
             raiseCallback(callback, true);
         }));
     }
@@ -48,7 +42,7 @@ export function alert(arg: any): Promise<void> {
         try {
             let options = !isDialogOptions(arg) ? { title: ALERT, okButtonText: OK, message: arg + "" } : arg;
             let alertController = UIAlertController.alertControllerWithTitleMessagePreferredStyle(options.title, options.message, UIAlertControllerStyle.Alert);
-            
+
             addButtonsToAlertController(alertController, options, () => { resolve(); });
 
             showUIAlertController(alertController);
@@ -129,7 +123,7 @@ export function prompt(arg: any): Promise<PromptResult> {
     });
 }
 
-export function login(arg: any): Promise<LoginResult> {
+export function login(): Promise<LoginResult> {
     let options: LoginOptions;
 
     let defaultOptions = { title: LOGIN, okButtonText: OK, cancelButtonText: CANCEL };
@@ -162,13 +156,14 @@ export function login(arg: any): Promise<LoginResult> {
             let passwordTextField: UITextField;
             let alertController = UIAlertController.alertControllerWithTitleMessagePreferredStyle(options.title, options.message, UIAlertControllerStyle.Alert);
 
+            let textFieldColor = getTextFieldColor();
+
             alertController.addTextFieldWithConfigurationHandler((arg: UITextField) => {
                 arg.placeholder = "Login";
                 arg.text = isString(options.userName) ? options.userName : "";
 
-                let color = getTextFieldColor();
-                if (color) {
-                    arg.textColor = arg.tintColor = color.ios;
+                if (textFieldColor) {
+                    arg.textColor = arg.tintColor = textFieldColor.ios;
                 }
             });
 
@@ -177,9 +172,8 @@ export function login(arg: any): Promise<LoginResult> {
                 arg.secureTextEntry = true;
                 arg.text = isString(options.password) ? options.password : "";
 
-                let color = getTextFieldColor();
-                if (color) {
-                    arg.textColor = arg.tintColor = color.ios;
+                if (textFieldColor) {
+                    arg.textColor = arg.tintColor = textFieldColor.ios;
                 }
             });
 
@@ -191,7 +185,7 @@ export function login(arg: any): Promise<LoginResult> {
                     resolve({
                         result: r,
                         userName:
-                        userNameTextField.text,
+                            userNameTextField.text,
                         password: passwordTextField.text
                     });
                 });
@@ -206,7 +200,20 @@ export function login(arg: any): Promise<LoginResult> {
 function showUIAlertController(alertController: UIAlertController) {
     let currentPage = getCurrentPage();
     if (currentPage) {
-        let viewController: UIViewController = currentPage.modal ? currentPage.modal.ios : currentPage.ios;
+        let view: View = currentPage;
+        let viewController: UIViewController = currentPage.ios;
+
+        if (currentPage.modal) {
+            view = currentPage.modal;
+
+            if (view.ios instanceof UIViewController) {
+                viewController = view.ios;
+            } else {
+                const parentWithController = iosView.getParentWithViewController(view);
+                viewController = parentWithController ? parentWithController.viewController : undefined;
+            }
+        }
+
         if (viewController) {
             if (alertController.popoverPresentationController) {
                 alertController.popoverPresentationController.sourceView = viewController.view;
@@ -214,7 +221,7 @@ function showUIAlertController(alertController: UIAlertController) {
                 alertController.popoverPresentationController.permittedArrowDirections = 0;
             }
 
-            let color = getButtonColor();
+            let color = getButtonColors().color;
             if (color) {
                 alertController.view.tintColor = color.ios;
             }
@@ -236,7 +243,7 @@ function showUIAlertController(alertController: UIAlertController) {
     }
 }
 
-export function action(arg: any): Promise<string> {
+export function action(): Promise<string> {
     let options: ActionOptions;
 
     let defaultOptions = { title: null, cancelButtonText: CANCEL };

@@ -53,7 +53,7 @@ try {
     if (appConfig && appConfig.cssParser === "nativescript") {
         parser = "nativescript";
     }
-} catch(e) {
+} catch (e) {
     //
 }
 
@@ -73,7 +73,6 @@ const pattern: RegExp = /('|")(.*?)\1/;
 
 class CSSSource {
     private _selectors: RuleSet[] = [];
-    private static cssFilesCache: { [path: string]: CSSSource } = {};
 
     private constructor(private _ast: SyntaxTree, private _url: string, private _file: string, private _keyframes: KeyframesMap, private _source: string) {
         this.parse();
@@ -103,7 +102,7 @@ class CSSSource {
                     return CSSSource.fromSource(cssOrAst.toString(), keyframes, appRelativeUri);
                 }
             }
-        } catch(e) {
+        } catch (e) {
             //
         }
 
@@ -173,7 +172,7 @@ class CSSSource {
     @profile
     private parseCSSAst() {
         if (this._source) {
-            switch(parser) {
+            switch (parser) {
                 case "nativescript":
                     const cssparser = new CSS3Parser(this._source);
                     const stylesheet = cssparser.parseAStylesheet();
@@ -237,7 +236,7 @@ class CSSSource {
     }
 }
 
-const onCssChanged = profile('"style-scope".onCssChanged', (args: applicationCommon.CssChangedEventData) => {
+const onCssChanged = profile("\"style-scope\".onCssChanged", (args: applicationCommon.CssChangedEventData) => {
     if (args.cssText) {
         const parsed = CSSSource.fromSource(args.cssText, applicationKeyframes, args.cssFile).selectors;
         if (parsed) {
@@ -268,7 +267,7 @@ const loadCss = profile(`"style-scope".loadCss`, (cssFile: string) => {
 applicationCommon.on("cssChanged", onCssChanged);
 applicationCommon.on("livesync", onLiveSync);
 
-export const loadAppCSS = profile('"style-scope".loadAppCSS', (args: applicationCommon.LoadAppCSSEventData) => {
+export const loadAppCSS = profile("\"style-scope\".loadAppCSS", (args: applicationCommon.LoadAppCSSEventData) => {
     loadCss(args.cssFile);
     applicationCommon.off("loadAppCss", loadAppCSS);
 });
@@ -399,7 +398,7 @@ export class CssState {
         Object.freeze(newPropertyValues);
 
         const oldProperties = this._appliedPropertyValues;
-        for(const key in oldProperties) {
+        for (const key in oldProperties) {
             if (!(key in newPropertyValues)) {
                 if (key in this.view.style) {
                     this.view.style[`css:${key}`] = unsetValue;
@@ -408,7 +407,7 @@ export class CssState {
                 }
             }
         }
-        for(const property in newPropertyValues) {
+        for (const property in newPropertyValues) {
             if (oldProperties && property in oldProperties && oldProperties[property] === newPropertyValues[property]) {
                 continue;
             }
@@ -480,13 +479,7 @@ CssState.prototype._matchInvalid = true;
 export class StyleScope {
 
     private _selectors: SelectorsMap;
-
-    // caches all the visual states by the key of the visual state selectors
-    private _statesByKey = {};
-    private _viewIdToKey = {};
-
     private _css: string = "";
-    private _cssFileName: string;
     private _mergedCssSelectors: RuleSet[];
     private _localCssSelectors: RuleSet[] = [];
     private _localCssSelectorVersion: number = 0;
@@ -499,7 +492,6 @@ export class StyleScope {
     }
 
     set css(value: string) {
-        this._cssFileName = undefined;
         this.setCss(value);
     }
 
@@ -514,7 +506,6 @@ export class StyleScope {
     @profile
     private setCss(cssString: string, cssFileName?): void {
         this._css = cssString;
-        this._reset();
 
         const cssFile = CSSSource.fromSource(cssString, this._keyframes, cssFileName);
         this._localCssSelectors = cssFile.selectors;
@@ -528,7 +519,6 @@ export class StyleScope {
             return;
         }
 
-        this._reset();
         let parsedCssSelectors = cssString ? CSSSource.fromSource(cssString, this._keyframes, cssFileName) : CSSSource.fromURI(cssFileName, this._keyframes);
         this._css = this._css + parsedCssSelectors.source;
         this._localCssSelectors.push.apply(this._localCssSelectors, parsedCssSelectors.selectors); 
@@ -589,11 +579,6 @@ export class StyleScope {
     public query(node: Node): SelectorCore[] {
         this.ensureSelectors();
         return this._selectors.query(node).selectors;
-    }
-
-    private _reset() {
-        this._statesByKey = {};
-        this._viewIdToKey = {};
     }
 
     private _getSelectorsVersion() {
@@ -676,14 +661,14 @@ function isKeyframe(node: CssNode): node is KeyframesDefinition {
     return node.type === "keyframes";
 }
 
-class InlineSelector implements SelectorCore {
-    constructor(ruleSet: RuleSet) {
-        this.ruleset = ruleSet;
-    }
+// class InlineSelector implements SelectorCore {
+//     constructor(ruleSet: RuleSet) {
+//         this.ruleset = ruleSet;
+//     }
 
-    public specificity = 0x01000000;
-    public rarity = 0;
-    public dynamic: boolean = false;
-    public ruleset: RuleSet;
-    public match(node: Node): boolean { return true; }
-}
+//     public specificity = 0x01000000;
+//     public rarity = 0;
+//     public dynamic: boolean = false;
+//     public ruleset: RuleSet;
+//     public match(node: Node): boolean { return true; }
+// }

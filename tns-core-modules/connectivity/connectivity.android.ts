@@ -1,13 +1,15 @@
-﻿import { getNativeApplication, android as androidApp} from "../application";
+﻿import { getNativeApplication, android as androidApp } from "../application";
 
 export enum connectionType {
     none = 0,
     wifi = 1,
     mobile = 2,
+    ethernet = 3
 }
 
 const wifi = "wifi";
 const mobile = "mobile";
+const ethernet = "ethernet";
 
 // Get Connection Type
 function getConnectivityManager(): android.net.ConnectivityManager {
@@ -30,12 +32,16 @@ export function getConnectionType(): number {
     }
 
     let type = activeNetworkInfo.getTypeName().toLowerCase();
-    if (type.indexOf(wifi) !== -1){
+    if (type.indexOf(wifi) !== -1) {
         return connectionType.wifi;
     }
     
-    if (type.indexOf(mobile) !== -1){
+    if (type.indexOf(mobile) !== -1) {
         return connectionType.mobile;
+    }
+
+    if (type.indexOf(ethernet) !== -1) {
+        return connectionType.ethernet;
     }
         
     return connectionType.none;

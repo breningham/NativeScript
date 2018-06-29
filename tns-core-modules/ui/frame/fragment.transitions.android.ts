@@ -1,5 +1,5 @@
 // Definitions.
-import { NavigationTransition, BackstackEntry, Frame } from "../frame";
+import { NavigationTransition, BackstackEntry } from "../frame";
 import { AnimationType } from "./fragment.transitions";
 
 // Types.
@@ -46,14 +46,13 @@ interface ExpandedEntry extends BackstackEntry {
     frameId: number
 }
 
-interface FragmentCallbacks {
-    frame: Frame;
-    entry: ExpandedEntry;
-}
-
 const sdkVersion = lazy(() => parseInt(device.sdkVersion));
 const intEvaluator = lazy(() => new android.animation.IntEvaluator());
 const defaultInterpolator = lazy(() => new android.view.animation.AccelerateDecelerateInterpolator());
+
+// NOTE: Android P Beta SDK version returns 27, which is API level for Android 8.1
+// TODO: Update condition when Android P SDK version returns 28
+const isAndroidP = lazy(() => sdkVersion() >= 27);
 
 export const waitingQueue = new Map<number, Set<ExpandedEntry>>();
 export const completedEntries = new Map<number, ExpandedEntry>();
@@ -78,34 +77,36 @@ export function _setAndroidFragmentTransitions(
     const newFragment: android.app.Fragment = newEntry.fragment;
     const entries = waitingQueue.get(frameId);
     if (entries && entries.size > 0) {
-        throw new Error('Calling navigation before previous navigation finish.');
+        throw new Error("Calling navigation before previous navigation finish.");
     }
 
-    initDefaultAnimations(manager);
+    if (!isAndroidP()) {
+        initDefaultAnimations(manager);
+    }
 
     if (sdkVersion() >= 21) {
         allowTransitionOverlap(currentFragment);
         allowTransitionOverlap(newFragment);
     }
 
-    let name = '';
+    let name = "";
     let transition: Transition;
 
     if (navigationTransition) {
         transition = navigationTransition.instance;
-        name = navigationTransition.name ? navigationTransition.name.toLowerCase() : '';
+        name = navigationTransition.name ? navigationTransition.name.toLowerCase() : "";
     }
 
-    let useLollipopTransition = name && (name.indexOf('slide') === 0 || name === 'fade' || name === 'explode') && sdkVersion() >= 21;
+    let useLollipopTransition = name && (name.indexOf("slide") === 0 || name === "fade" || name === "explode") && sdkVersion() >= 21;
     if (!animated) {
-        name = 'none';
+        name = "none";
     } else if (transition) {
-        name = 'custom';
+        name = "custom";
         // specifiying transition should override default one even if name match the lollipop transition name.
         useLollipopTransition = false;
-    } else if (!useLollipopTransition && name.indexOf('slide') !== 0 && name !== 'fade' && name.indexOf('flip') !== 0) {
+    } else if (!useLollipopTransition && name.indexOf("slide") !== 0 && name !== "fade" && name.indexOf("flip") !== 0) {
         // If we are given name that doesn't match any of ours - fallback to default.
-        name = 'default';
+        name = "default";
     }
 
     let currentFragmentNeedsDifferentAnimation = false;
@@ -118,44 +119,48 @@ export function _setAndroidFragmentTransitions(
         }
     }
 
-    if (name === 'none') {
+    if (name === "none") {
         transition = new NoTransition(0, null);
-    } else if (name === 'default') {
-        transition = new DefaultTransition(0, null);
+    } else if (name === "default") {
+        if (isAndroidP()) {
+            transition = new FadeTransition(150, null);
+        } else {
+            transition = new DefaultTransition(0, null);
+        }
     } else if (useLollipopTransition) {
         // setEnterTransition: Enter
         // setExitTransition: Exit
         // setReenterTransition: Pop Enter, same as Exit if not specified
         // setReturnTransition: Pop Exit, same as Enter if not specified
 
-        if (name.indexOf('slide') === 0) {
+        if (name.indexOf("slide") === 0) {
             setupNewFragmentSlideTransition(navigationTransition, newEntry, name);
             if (currentFragmentNeedsDifferentAnimation) {
                 setupCurrentFragmentSlideTransition(navigationTransition, currentEntry, name);
             }
-        } else if (name === 'fade') {
+        } else if (name === "fade") {
             setupNewFragmentFadeTransition(navigationTransition, newEntry);
             if (currentFragmentNeedsDifferentAnimation) {
                 setupCurrentFragmentFadeTransition(navigationTransition, currentEntry);
             }
-        } else if (name === 'explode') {
+        } else if (name === "explode") {
             setupNewFragmentExplodeTransition(navigationTransition, newEntry);
             if (currentFragmentNeedsDifferentAnimation) {
                 setupCurrentFragmentExplodeTransition(navigationTransition, currentEntry);
             }
         }
-    } else if (name.indexOf('slide') === 0) {
-        const direction = name.substr('slide'.length) || 'left'; //Extract the direction from the string
+    } else if (name.indexOf("slide") === 0) {
+        const direction = name.substr("slide".length) || "left"; //Extract the direction from the string
         transition = new SlideTransition(direction, navigationTransition.duration, navigationTransition.curve);
-    } else if (name === 'fade') {
+    } else if (name === "fade") {
         transition = new FadeTransition(navigationTransition.duration, navigationTransition.curve);
-    } else if (name.indexOf('flip') === 0) {
-        const direction = name.substr('flip'.length) || 'right'; //Extract the direction from the string
+    } else if (name.indexOf("flip") === 0) {
+        const direction = name.substr("flip".length) || "right"; //Extract the direction from the string
         transition = new FlipTransition(direction, navigationTransition.duration, navigationTransition.curve);
     }
 
     newEntry.transitionName = name;
-    if (name === 'custom') {
+    if (name === "custom") {
         newEntry.transition = transition;
     }
 
@@ -170,12 +175,16 @@ export function _setAndroidFragmentTransitions(
 
     if (currentEntry) {
         currentEntry.transitionName = name;
-        if (name === 'custom') {
+        if (name === "custom") {
             currentEntry.transition = transition;
         }
     }
 
-    setupDefaultAnimations(newEntry, new DefaultTransition(0, null));
+    if (isAndroidP()) {
+        setupDefaultAnimations(newEntry, new FadeTransition(150, null));
+    } else {
+        setupDefaultAnimations(newEntry, new DefaultTransition(0, null));
+    }
 
     printTransitions(currentEntry);
     printTransitions(newEntry);
@@ -700,6 +709,14 @@ function addNativeTransitionListener(entry: ExpandedEntry, nativeTransition: and
 function transitionOrAnimationCompleted(entry: ExpandedEntry): void {
     const frameId = entry.frameId;
     const entries = waitingQueue.get(frameId);
+    // https://github.com/NativeScript/NativeScript/issues/5759
+    // https://github.com/NativeScript/NativeScript/issues/5780
+    // transitionOrAnimationCompleted fires again (probably bug in android)
+    // NOTE: we cannot reproduce this issue so this is a blind fix
+    if (!entries) {
+        return;
+    }
+
     entries.delete(entry);
     if (entries.size === 0) {
         const frame = entry.resolvedPage.frame;
@@ -712,7 +729,7 @@ function transitionOrAnimationCompleted(entry: ExpandedEntry): void {
         let current = frame.isCurrent(entry) ? previousCompletedAnimationEntry : entry;
         current = current || entry;
         // Will be null if Frame is shown modally...
-        // AnimationCompleted fires again (probably bug in android).
+        // transitionOrAnimationCompleted fires again (probably bug in android).
         if (current) {
             const isBack = frame._isBack;
             setTimeout(() => frame.setCurrent(current, isBack));

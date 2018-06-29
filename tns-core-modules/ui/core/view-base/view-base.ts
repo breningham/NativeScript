@@ -1,14 +1,12 @@
 // Definitions.
 import { ViewBase as ViewBaseDefinition } from ".";
 import { Page } from "../../page";
-import { SelectorCore } from "../../styling/css-selector";
 import { Order, FlexGrow, FlexShrink, FlexWrapBefore, AlignSelf } from "../../layouts/flexbox-layout";
-import { KeyframeAnimation } from "../../animation/keyframe-animation";
 
 // Types.
-import { Property, CssProperty, CssAnimationProperty, InheritedProperty, Style, clearInheritedProperties, propagateInheritableProperties, propagateInheritableCssProperties, resetCSSProperties, initNativeView, resetNativeView } from "../properties";
+import { Property, CssProperty, CssAnimationProperty, InheritedProperty, Style, clearInheritedProperties, propagateInheritableProperties, propagateInheritableCssProperties, initNativeView } from "../properties";
 import { Source } from "../../../utils/debug";
-import { Binding, BindingOptions, Observable, WrappedValue, PropertyChangeData, traceEnabled, traceWrite, traceCategories, traceNotifyEvent } from "../bindable";
+import { Binding, BindingOptions, Observable, WrappedValue, PropertyChangeData, traceEnabled, traceWrite, traceCategories } from "../bindable";
 import { isIOS, isAndroid } from "../../../platform";
 import { layout } from "../../../utils/utils";
 import { Length, paddingTopProperty, paddingRightProperty, paddingBottomProperty, paddingLeftProperty } from "../../styling/style-properties";
@@ -141,8 +139,8 @@ let viewIdCounter = 1;
 // }
 
 enum Flags {
-    superOnLoadedCalled = 'Loaded',
-    superOnUnloadedCalled = 'Unloaded',
+    superOnLoadedCalled = "Loaded",
+    superOnUnloadedCalled = "Unloaded",
 }
 
 enum SuspendType {
@@ -442,9 +440,9 @@ export abstract class ViewBase extends Observable implements ViewBaseDefinition 
     }
 
     private pseudoClassAliases = {
-        'highlighted': [
-            'active',
-            'pressed'
+        "highlighted": [
+            "active",
+            "pressed"
         ]
     };
 
@@ -946,15 +944,15 @@ export abstract class ViewBase extends Observable implements ViewBaseDefinition 
         }
     }
 
-    public showModal(): ViewBase {
+    public showModal(...args): ViewBase {
         const parent = this.parent;
-        return parent && parent.showModal();
+        return parent && parent.showModal(...args);
     }
 
-    public closeModal(): void {
+    public closeModal(...args): void {
         const parent = this.parent;
         if (parent) {
-            parent.closeModal();
+            parent.closeModal(...args);
         }
     }
 
@@ -1028,7 +1026,7 @@ export const idProperty = new Property<ViewBase, string>({ name: "id", valueChan
 idProperty.register(ViewBase);
 
 export function booleanConverter(v: string): boolean {
-    const lowercase = (v + '').toLowerCase();
+    const lowercase = (v + "").toLowerCase();
     if (lowercase === "true") {
         return true;
     } else if (lowercase === "false") {

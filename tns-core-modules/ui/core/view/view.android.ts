@@ -1,5 +1,4 @@
 // Definitions.
-import { ViewBase } from "../view-base";
 import { Point, CustomLayoutView as CustomLayoutViewDefinition, dip } from ".";
 import { GestureTypes, GestureEventData } from "../../gestures";
 import { AndroidActivityBackPressedEventData } from "../../../application";
@@ -8,7 +7,7 @@ import {
     ViewCommon, layout, isEnabledProperty, originXProperty, originYProperty, automationTextProperty, isUserInteractionEnabledProperty,
     traceEnabled, traceWrite, traceCategories, traceNotifyEvent,
     paddingLeftProperty, paddingTopProperty, paddingRightProperty, paddingBottomProperty,
-    Color
+    Color, EventData
 } from "./view-common";
 
 import {
@@ -22,6 +21,7 @@ import {
 
 import { Background, ad as androidBackground } from "../../styling/background";
 import { profile } from "../../../profiling";
+import { topmost } from "../../frame/frame-stack";
 
 export * from "./view-common";
 
@@ -33,7 +33,6 @@ const modalMap = new Map<number, DialogOptions>();
 let TouchListener: TouchListener;
 let disableUserInteractionListener: org.nativescript.widgets.DisableUserInteractionListener;
 let DialogFragment: DialogFragment;
-let Dialog: android.app.Dialog;
 
 interface DialogOptions {
     owner: View;
@@ -230,6 +229,8 @@ export class View extends ViewCommon {
     private _isClickable: boolean;
     private touchListenerIsSet: boolean;
     private touchListener: android.view.View.OnTouchListener;
+    private layoutChangeListenerIsSet: boolean;
+    private layoutChangeListener: android.view.View.OnLayoutChangeListener;
     private _manager: android.app.FragmentManager;
 
     nativeViewProtected: android.view.View;
@@ -239,6 +240,26 @@ export class View extends ViewCommon {
         super.observe(type, callback, thisArg);
         if (this.isLoaded && !this.touchListenerIsSet) {
             this.setOnTouchListener();
+        }
+    }
+
+    on(eventNames: string, callback: (data: EventData) => void, thisArg?: any) {
+        super.on(eventNames, callback, thisArg);
+        const isLayoutEvent = typeof eventNames === "string" ? eventNames.indexOf(ViewCommon.layoutChangedEvent) !== -1 : false;
+
+        if (this.isLoaded && !this.layoutChangeListenerIsSet && isLayoutEvent) {
+            this.setOnLayoutChangeListener();
+        }
+    }
+
+    off(eventNames: string, callback?: any, thisArg?: any) {
+        super.off(eventNames, callback, thisArg);
+        const isLayoutEvent = typeof eventNames === "string" ? eventNames.indexOf(ViewCommon.layoutChangedEvent) !== -1 : false;
+
+        // Remove native listener only if there are no more user listeners for LayoutChanged event
+        if (this.isLoaded && this.layoutChangeListenerIsSet && isLayoutEvent && !this.hasListeners(ViewCommon.layoutChangedEvent)) {
+            this.nativeViewProtected.removeOnLayoutChangeListener(this.layoutChangeListener);
+            this.layoutChangeListenerIsSet = false;
         }
     }
 
@@ -287,6 +308,18 @@ export class View extends ViewCommon {
         super.onUnloaded();
     }
 
+    public onBackPressed(): boolean {
+        let topmostFrame = topmost();
+
+        // Delegate back navigation handling to the topmost Frame
+        // when it's a child of the current View.
+        if (topmostFrame && topmostFrame._hasAncestorView(this)) {
+            return topmostFrame.onBackPressed();
+        }
+
+        return false;
+    }
+
     private hasGestureObservers() {
         return this._gestureObservers && Object.keys(this._gestureObservers).length > 0
     }
@@ -294,6 +327,19 @@ export class View extends ViewCommon {
     public initNativeView(): void {
         super.initNativeView();
         this._isClickable = this.nativeViewProtected.isClickable();
+
+        if (this.hasListeners(ViewCommon.layoutChangedEvent)) {
+            this.setOnLayoutChangeListener();
+        }
+    }
+
+    public disposeNativeView(): void {
+        super.disposeNativeView();
+
+        if (this.layoutChangeListenerIsSet) {
+            this.layoutChangeListenerIsSet = false;
+            this.nativeViewProtected.removeOnLayoutChangeListener(this.layoutChangeListener);
+        }
     }
 
     private setOnTouchListener() {
@@ -306,6 +352,25 @@ export class View extends ViewCommon {
             initializeTouchListener();
             this.touchListener = this.touchListener || new TouchListener(this);
             this.nativeViewProtected.setOnTouchListener(this.touchListener);
+        }
+    }
+
+    private setOnLayoutChangeListener() {
+        if (this.nativeViewProtected) {
+            const owner = this;
+            this.layoutChangeListenerIsSet = true;
+            this.layoutChangeListener = this.layoutChangeListener || new android.view.View.OnLayoutChangeListener({
+                onLayoutChange(
+                    v: android.view.View,
+                    left: number, top: number, right: number, bottom: number,
+                    oldLeft: number, oldTop: number, oldRight: number, oldBottom: number): void {
+                    if (left !== oldLeft || top !== oldTop || right !== oldRight || bottom !== oldBottom) {
+                        owner._raiseLayoutChangedEvent();
+                    }
+                }
+            });
+
+            this.nativeViewProtected.addOnLayoutChangeListener(this.layoutChangeListener);
         }
     }
 

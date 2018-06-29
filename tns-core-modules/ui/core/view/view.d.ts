@@ -7,9 +7,11 @@ import { ViewBase, Property, EventData, Color } from "../view-base";
 import { Animation, AnimationDefinition, AnimationPromise } from "../../animation";
 import { HorizontalAlignment, VerticalAlignment, Visibility, Length, PercentLength } from "../../styling/style-properties";
 import { GestureTypes, GestureEventData, GesturesObserver } from "../../gestures";
+import { LinearGradient } from "../../styling/gradient";
 
 export * from "../view-base";
 export * from "../../styling/style-properties";
+export { LinearGradient };
 
 export function PseudoClassHandler(...pseudoClasses: string[]): MethodDecorator;
 
@@ -102,6 +104,10 @@ export interface ShownModallyData extends EventData {
  */
 export abstract class View extends ViewBase {
     /**
+     * String value used when hooking to layoutChanged event.
+     */
+    public static layoutChangedEvent: string;
+    /**
      * String value used when hooking to showingModally event.
      */
     public static showingModallyEvent: string;
@@ -110,7 +116,7 @@ export abstract class View extends ViewBase {
      * String value used when hooking to shownModally event.
      */
     public static shownModallyEvent: string;
-    
+
     /**
      * Gets the android-specific native instance that lies behind this proxy. Will be available if running on an Android platform.
      */
@@ -219,7 +225,7 @@ export abstract class View extends ViewBase {
     /**
      * Gets or sets the background image of the view.
      */
-    backgroundImage: string;
+    backgroundImage: string | LinearGradient;
 
     /**
      * Gets or sets the minimum width the view may grow to.
@@ -507,39 +513,6 @@ export abstract class View extends ViewBase {
     on(event: "shownModally", callback: (args: ShownModallyData) => void, thisArg?: any);
 
     /**
-    * Shows the View contained in moduleName as a modal view.
-    * @param moduleName - The name of the module to load starting from the application root.
-    * @param context - Any context you want to pass to the modally shown view.
-    * This same context will be available in the arguments of the shownModally event handler.
-    * @param closeCallback - A function that will be called when the view is closed.
-    * Any arguments provided when calling ShownModallyData.closeCallback will be available here.
-    * @param fullscreen - An optional parameter specifying whether to show the modal page in full-screen mode.
-    * @param stretched - An optional parameter specifying whether to stretch the modal page when not in full-screen mode.
-    */
-    showModal(moduleName: string, context: any, closeCallback: Function, fullscreen?: boolean, animated?: boolean, stretched?: boolean): View;
-
-    /**
-     * Shows the view passed as parameter as a modal view.
-     * @param view - View instance to be shown modally.
-     * @param context - Any context you want to pass to the modally shown view. This same context will be available in the arguments of the shownModally event handler.
-     * @param closeCallback - A function that will be called when the view is closed. Any arguments provided when calling ShownModallyData.closeCallback will be available here.
-     * @param fullscreen - An optional parameter specifying whether to show the modal view in full-screen mode.
-     * @param stretched - An optional parameter specifying whether to stretch the modal page when not in full-screen mode.
-     */
-    showModal(view: View, context: any, closeCallback: Function, fullscreen?: boolean, animated?: boolean, stretched?: boolean): View;
-
-    /**
-     * Deprecated. Showing view as modal is deprecated.
-     * Use showModal method with arguments.
-     */
-    showModal(): View;
-
-    /**
-     * Closes the current modal view that this page is showing.
-     */
-    closeModal(): void;
-
-    /**
      * Returns the current modal view that this page is showing (is parent of), if any.
      */
     modal: View;
@@ -573,6 +546,11 @@ export abstract class View extends ViewBase {
      * Returns the actual size of the view in device-independent pixels.
      */
     public getActualSize(): Size;
+
+    /**
+     * Derived classes can override this method to handle Android back button press. 
+     */
+    onBackPressed(): boolean;
 
     /**
      * @private
@@ -678,11 +656,6 @@ export abstract class View extends ViewBase {
      * @private
      */
     _onLivesync(): boolean;
-
-    /**
-     * Derived classes can override this method to handle Android back button press. 
-     */
-    onBackPressed(): boolean;
     /**
      * @private
      */
@@ -705,6 +678,11 @@ export abstract class View extends ViewBase {
      * Called in android when native view is dettached from window.
      */
     _onDetachedFromWindow(): void;
+
+    /**
+     * Checks whether the current view has specific view for an ancestor.
+     */
+    _hasAncestorView(ancestorView: View): boolean;
     //@endprivate
 
     /**
@@ -797,7 +775,12 @@ export const isEnabledProperty: Property<View, boolean>;
 export const isUserInteractionEnabledProperty: Property<View, boolean>;
 
 export namespace ios {
-    export function isContentScrollable(controller: any /* UIViewController */, owner: View): boolean 
+    /**
+     * Returns a view with viewController or undefined if no such found along the view's parent chain.
+     * @param view The view form which to start the search.
+     */
+    export function getParentWithViewController(view: View): View
+    export function isContentScrollable(controller: any /* UIViewController */, owner: View): boolean
     export function updateAutoAdjustScrollInsets(controller: any /* UIViewController */, owner: View): void
     export function updateConstraints(controller: any /* UIViewController */, owner: View): void;
     export function layoutView(controller: any /* UIViewController */, owner: View): void;

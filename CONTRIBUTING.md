@@ -19,6 +19,10 @@ Help us keep a healthy and open community. We expect all participants in this pr
 2. Search for similar issues in the issues list for this repo; it may already be an identified problem.
 3. If this is a bug or problem that is clear, simple, and is unlikely to require any discussion -- it is OK to open an issue on GitHub with a reproduction of the bug including workflows and screenshots. If possible, submit a Pull Request with a failing test, entire application or module. If you'd rather take matters into your own hands, fix the bug yourself (jump down to the [Submitting a PR](#pr) section).
 
+> While we are doing all we can to take care of every issue, sometimes we get overwhelmed. That's why
+> - issues that are not constructive or describe problems that cannot be reproduced will be closed
+> - feature requests or bug reports with unanswered questions regarding the behavior/reproduction for more than 20 days will be closed 
+
 ## <a name="features"></a> Requesting Features
 
 1. Use Github Issues to submit feature requests.
@@ -57,11 +61,12 @@ git checkout -b <my-fix-branch> master
 
 4. The fun part! Make your code changes. Make sure you:
     - Follow the [code conventions guide](CodingConvention.md).
+    - Follow the [guide on handling errors and exceptions](HandlingErrors.md).
     - Write unit tests for your fix or feature. Check out [writing unit tests guide](WritingUnitTests.md).
 
 5. Before you submit your PR:
     - Rebase your changes to the latest master: `git pull --rebase upstream master`.
-    - Ensure all unit test are green for Android and iOS. Check [running unit tests](DevelopmentWorkflow.md#running-unit-tests).
+    - Ensure all unit test are green for Android and iOS. Check [running unit   tests](DevelopmentWorkflow.md#running-unit-tests).
     - Ensure your changes pass tslint validation. (run `npm run tslint` in the root of the repo).
 
 6. Push your fork. If you have rebased you might have to use force-push your branch:

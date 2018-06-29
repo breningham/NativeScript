@@ -24,6 +24,7 @@ import { Label } from "tns-core-modules/ui/label";
 import { Color } from "tns-core-modules/color";
 import { TabView, TabViewItem } from "tns-core-modules/ui/tab-view/tab-view";
 import { _resetRootView, getRootView } from "tns-core-modules/application";
+import { Button } from "tns-core-modules/ui/button/button";
 
 export function addLabelToPage(page: Page, text?: string) {
     const label = new Label();
@@ -421,6 +422,188 @@ export function test_WhenPageIsNavigatedToFrameCurrentPageIsNowTheSameAsThePage(
     page.off(Label.loadedEvent, navigatedEventHandler);
 }
 
+export function test_WhenInnerViewCallsCloseModal_WithArguments_ShouldPassResult() {
+    _test_WhenInnerViewCallsCloseModal((args: ShownModallyData) =>
+    {
+        const page = <Page>args.object;
+        const button = <Button>page.content;
+        return button.closeModal.bind(button);
+    }, "return value");
+}
+
+export function test_WhenInnerViewCallsCloseModal_WithoutArguments_ShouldWork() {
+    _test_WhenInnerViewCallsCloseModal((args: ShownModallyData) =>
+    {
+        const page = <Page>args.object;
+        const button = <Button>page.content;
+        return button.closeModal.bind(button);
+    });
+}
+
+export function test_WhenInnerViewCallsCloseCallback_WithArguments_ShouldPassResult() {
+    _test_WhenInnerViewCallsCloseModal((args: ShownModallyData) =>
+    {
+        return args.closeCallback;
+    }, "return value");
+}
+
+export function test_WhenInnerViewCallsCloseCallback_WithoutArguments_ShouldWork() {
+    _test_WhenInnerViewCallsCloseModal((args: ShownModallyData) =>
+    {
+        return args.closeCallback;
+    });
+}
+
+function _test_WhenInnerViewCallsCloseModal(closeModalGetter: (ShownModallyData) => Function, result?: any) {
+    let modalClosedWithResult = false;
+
+    const modalCloseCallback = function (returnValue: any) {
+        modalClosedWithResult = returnValue === result;
+    }
+
+    const modalPageShownModallyEventHandler = function(args: ShownModallyData) {
+        const page = <Page>args.object;
+        page.off(View.shownModallyEvent, modalPageShownModallyEventHandler);
+        
+        closeModalGetter(args)(result);
+    }
+
+    const hostNavigatedToEventHandler = function(args: NavigatedData) {
+        const page = <Page>args.object;
+        page.off(Page.navigatedToEvent, hostNavigatedToEventHandler);
+
+        const modalPage = new Page();
+        modalPage.id = "modalPage_test_WhenInnerViewCallsCloseModal_WithArguments_ShouldPassResult";
+        modalPage.on(View.shownModallyEvent, modalPageShownModallyEventHandler);
+
+        const button = new Button();
+        button.text = "CLOSE MODAL";
+        modalPage.content = button;
+
+        (<Button>page.content).showModal(modalPage, {}, modalCloseCallback);
+    }
+
+    const masterPageFactory = function(): Page {
+        const masterPage = new Page();
+        masterPage.id = "masterPage_test_WhenInnerViewCallsCloseModal_WithArguments_ShouldPassResult";
+        masterPage.on(Page.navigatedToEvent, hostNavigatedToEventHandler)
+        
+        const button = new Button();
+        button.text = "TAP";
+        masterPage.content = button;
+
+        return masterPage;
+    };
+
+    helper.navigate(masterPageFactory);
+
+    TKUnit.waitUntilReady(() => modalClosedWithResult);
+}
+
+export function test_WhenViewBaseCallsShowModal_WithArguments_ShouldOpenModal() {
+    let modalClosed = false;
+
+    const modalCloseCallback = function (returnValue: any) {
+        modalClosed = true;
+    }
+
+    const createTabItems = function(count: number) {
+        var items = new Array<TabViewItem>();
+
+        for (var i = 0; i < count; i++) {
+            var label = new Label();
+            label.text = "Tab " + i;
+            var tabEntry = new TabViewItem();
+            tabEntry.title = "Tab " + i;
+            tabEntry.view = label;
+
+            items.push(tabEntry);
+        }
+
+        return items;
+    }
+
+    const modalPageShownModallyEventHandler = function(args: ShownModallyData) {
+        const page = <Page>args.object;
+        page.off(View.shownModallyEvent, modalPageShownModallyEventHandler);
+        args.closeCallback();
+    }
+
+    const hostNavigatedToEventHandler = function(args) {
+        const page = <Page>args.object;
+        page.off(Page.navigatedToEvent, hostNavigatedToEventHandler);
+
+        const modalPage = new Page();
+        modalPage.id = "modalPage_test_WhenViewBaseCallsShowModal_WithArguments_ShouldOpenModal";
+        modalPage.on(View.shownModallyEvent, modalPageShownModallyEventHandler);
+        const tabViewItem = (<TabView>page.content).items[0];
+        tabViewItem.showModal(modalPage, {}, modalCloseCallback, false, false);
+    }
+
+    const masterPageFactory = function(): Page {
+        const masterPage = new Page();
+        masterPage.id = "masterPage_test_WhenViewBaseCallsShowModal_WithArguments_ShouldOpenModal";
+        masterPage.on(Page.navigatedToEvent, hostNavigatedToEventHandler)
+        
+        const tabView = new TabView();
+        tabView.items = createTabItems(2);
+        masterPage.content = tabView;
+
+        return masterPage;
+    };
+
+    helper.navigate(masterPageFactory);
+
+    TKUnit.waitUntilReady(() => modalClosed);
+}
+
+export function test_WhenViewBaseCallsShowModal_WithoutArguments_ShouldThrow() {
+    let navigatedTo = false;
+
+    const createTabItems = function(count: number) {
+        var items = new Array<TabViewItem>();
+
+        for (var i = 0; i < count; i++) {
+            var label = new Label();
+            label.text = "Tab " + i;
+            var tabEntry = new TabViewItem();
+            tabEntry.title = "Tab " + i;
+            tabEntry.view = label;
+
+            items.push(tabEntry);
+        }
+
+        return items;
+    }
+
+    const hostNavigatedToEventHandler = function(args) {
+        const page = <Page>args.object;
+        page.off(Page.navigatedToEvent, hostNavigatedToEventHandler);
+     
+        const hostPage = <Page>args.object;
+        const tabViewItem = (<TabView>page.content).items[0];
+        TKUnit.assertThrows(() => tabViewItem.showModal());
+
+        navigatedTo = true;
+    }
+
+    const masterPageFactory = function(): Page {
+        const masterPage = new Page();
+        masterPage.id = "masterPage_test_WhenViewBaseCallsShowModal_WithoutArguments_ShouldThrow";
+        masterPage.on(Page.navigatedToEvent, hostNavigatedToEventHandler)
+        
+        const tabView = new TabView();
+        tabView.items = createTabItems(2);
+        masterPage.content = tabView;
+
+        return masterPage;
+    };
+
+    helper.navigate(masterPageFactory);
+
+    TKUnit.waitUntilReady(() => navigatedTo);
+}
+
 export function test_WhenNavigatingForwardAndBack_IsBackNavigationIsCorrect() {
     let page1;
     let page2;
@@ -587,7 +770,7 @@ export function test_WhenPageIsNavigatedToItCanShowAnotherPageAsModal() {
 
     helper.navigate(masterPageFactory);
 
-    TKUnit.waitUntilReady(() => { return modalUnloaded > 0; });
+    TKUnit.waitUntilReady(() => modalUnloaded > 0);
     TKUnit.assertEqual(shownModally, 1, "shownModally");
     TKUnit.assertEqual(modalLoaded, 1, "modalLoaded");
     TKUnit.assertEqual(modalUnloaded, 1, "modalUnloaded");

@@ -21,9 +21,11 @@ import {
 
 import { createViewFromEntry } from "../../builder";
 import { StyleScope } from "../../styling/style-scope";
+import { LinearGradient } from "../../styling/linear-gradient";
 
 export * from "../../styling/style-properties";
 export * from "../view-base";
+export { LinearGradient };
 
 import * as am from "../../animation";
 let animationModule: typeof am;
@@ -59,6 +61,7 @@ export function PseudoClassHandler(...pseudoClasses: string[]): MethodDecorator 
 export const _rootModalViews = new Array<ViewBase>();
 
 export abstract class ViewCommon extends ViewBase implements ViewDefinition {
+    public static layoutChangedEvent = "layoutChanged";
     public static shownModallyEvent = "shownModally";
     public static showingModallyEvent = "showingModally";
 
@@ -213,7 +216,7 @@ export abstract class ViewCommon extends ViewBase implements ViewDefinition {
 
     public showModal(): ViewDefinition {
         if (arguments.length === 0) {
-            throw new Error('showModal without parameters is deprecated. Please call showModal on a view instance instead.');
+            throw new Error("showModal without parameters is deprecated. Please call showModal on a view instance instead.");
         } else {
             const firstAgrument = arguments[0];
             const context: any = arguments[1];
@@ -230,14 +233,14 @@ export abstract class ViewCommon extends ViewBase implements ViewDefinition {
         }
     }
 
-    public closeModal() {
+    public closeModal(...args) {
         let closeCallback = this._closeModalCallback;
         if (closeCallback) {
             closeCallback.apply(undefined, arguments);
         } else {
             let parent = this.parent;
             if (parent) {
-                parent.closeModal();
+                parent.closeModal(...args);
             }
         }
     }
@@ -263,7 +266,7 @@ export abstract class ViewCommon extends ViewBase implements ViewDefinition {
                 that._closeModalCallback = null;
                 that._dialogClosed();
                 parent._modal = null;
-                
+
                 if (typeof closeCallback === "function") {
                     closeCallback.apply(undefined, arguments);
                 }
@@ -273,6 +276,14 @@ export abstract class ViewCommon extends ViewBase implements ViewDefinition {
 
     protected _hideNativeModalView(parent: ViewCommon) {
         //
+    }
+
+    protected _raiseLayoutChangedEvent() {
+        const args: EventData = {
+            eventName: ViewCommon.layoutChangedEvent,
+            object: this
+        };
+        this.notify(args);
     }
 
     protected _raiseShownModallyEvent() {
@@ -435,10 +446,10 @@ export abstract class ViewCommon extends ViewBase implements ViewDefinition {
         this.style.backgroundColor = value;
     }
 
-    get backgroundImage(): string {
+    get backgroundImage(): string | LinearGradient {
         return this.style.backgroundImage;
     }
-    set backgroundImage(value: string) {
+    set backgroundImage(value: string | LinearGradient) {
         this.style.backgroundImage = value;
     }
 
@@ -975,6 +986,18 @@ export abstract class ViewCommon extends ViewBase implements ViewDefinition {
 
     _onDetachedFromWindow(): void {
         //
+    }
+
+    _hasAncestorView(ancestorView: ViewDefinition): boolean {
+        let matcher = (view: ViewDefinition) => view === ancestorView;
+
+        for (let parent = this.parent; parent != null; parent = parent.parent) {
+            if (matcher(<ViewDefinition>parent)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
 

@@ -5,18 +5,25 @@ const home = "Home"
 const first = "First"
 const modal = "Modal";
 const modalFirst = "Modal First";
+const dialogConfirm = "Dialog";
 const modalSecond = "Modal Second";
 const modalNested = "Modal Nested";
 
 const modalFrame = "Show Modal Page With Frame";
 const modalPage = "Show Modal Page";
+const modalLayout = "Show Modal Layout";
 const modalTabView = "Show Modal TabView";
 const navToSecondPage = "Navigate To Second Page";
-const rootView = "Change Root View";
+const showDialog = "Show Dialog";
+const resetFrameRootView = "Reset Frame Root View";
+const resetTabRootView = "Reset Tab Root View";
+const resetLayoutRootView = "Reset Layout Root View";
 
 const showNestedModalFrame = "Show Nested Modal Page With Frame";
 const showNestedModalPage = "Show Nested Modal Page";
 
+const confirmDialog = "Yes";
+const confirmDialogMessage = "Message";
 const closeModalNested = "Close Modal Nested";
 const closeModal = "Close Modal";
 const goBack = "Go Back";
@@ -35,9 +42,21 @@ export class Screen {
         console.log(home + " loaded!");
     }
 
-    changeRootView = async () => {
-        const btnChangeRootView = await this._driver.findElementByText(rootView);
-        await btnChangeRootView.tap();
+    resetFrameRootView = async () => {
+        console.log("Setting frame root ...");
+        const btnResetFrameRootView = await this._driver.findElementByText(resetFrameRootView);
+        await btnResetFrameRootView.tap();
+    }
+
+    resetLayoutRootView = async () => {
+        console.log("Setting layout root ...");
+        const btnResetLayoutRootView = await this._driver.findElementByText(resetLayoutRootView);
+        await btnResetLayoutRootView.tap();
+    }
+
+    resetTabRootView = async () => {
+        const btnResetTabRootView = await this._driver.findElementByText(resetTabRootView);
+        await btnResetTabRootView.tap();
     }
 
     loadedTabRootView = async () => {
@@ -46,15 +65,27 @@ export class Screen {
         console.log("Tab root view loaded!");
     }
 
+    setFrameRootView = async () => {
+        // should load frame root, no need to verify it is loaded
+        await this.loadedHome();
+        await this.resetFrameRootView();
+    }
+
     setTabRootView = async () => {
         // should load tab root
         await this.loadedHome();
         try {
             await this.loadedTabRootView();
         } catch (err) {
-            await this.changeRootView();
+            await this.resetTabRootView();
             await this.loadedTabRootView();
         }
+    }
+
+    setLayoutRootView = async () => {
+        // should load layout root, no need to verify it is loaded
+        await this.loadedHome();
+        await this.resetLayoutRootView();
     }
 
     showModalFrame = async () => {
@@ -79,6 +110,15 @@ export class Screen {
         console.log("Modal Page loaded!");
     }
 
+    showModalLayout = async () => {
+        const btnModalLayout = await this._driver.findElementByText(modalLayout);
+        await btnModalLayout.tap();
+    }
+
+    loadedModalLayout = async () => {
+        await this.loadedModalFrame();
+    }
+
     showModalTabView = async () => {
         const btnModalTabView = await this._driver.findElementByText(modalTabView);
         await btnModalTabView.tap();
@@ -95,6 +135,11 @@ export class Screen {
         await btnNavToSecondPage.tap();
     }
 
+    showDialogConfirm = async () => {
+        const btnShowDialogConfirm = await this._driver.findElementByText(showDialog);
+        await btnShowDialogConfirm.tap();
+    }
+
     navigateToFirstItem = async () => {
         const itemModalFirst = await this._driver.findElementByText(modalFirst);
         await itemModalFirst.tap();
@@ -103,6 +148,12 @@ export class Screen {
     navigateToSecondItem = async () => {
         const itemModalSecond = await this._driver.findElementByText(modalSecond);
         await itemModalSecond.tap();
+    }
+
+    loadedConfirmDialog = async () => {
+        const lblDialogMessage = await this._driver.findElementByText(confirmDialogMessage);
+        assert.isTrue(await lblDialogMessage.isDisplayed());
+        console.log(dialogConfirm + " shown!");
     }
 
     loadedSecondPage = async () => {
@@ -121,6 +172,11 @@ export class Screen {
         const btnGoBack = await this._driver.findElementByText(goBack);
         assert.isTrue(await btnGoBack.isDisplayed());
         console.log("Second Item loaded!");
+    }
+
+    closeDialog = async () => {
+        const btnYesDialog = await this._driver.findElementByText(confirmDialog);
+        await btnYesDialog.tap();
     }
 
     goBackFromSecondPage = async () => {
@@ -177,6 +233,16 @@ export class Screen {
             // should show modal page
             await this.showModalPage();
             await this.loadedModalPage();
+        }
+    }
+
+    loadModalLayout = async () => {
+        try {
+            await this.loadedModalLayout();
+        } catch (err) {
+            // should show modal layout
+            await this.showModalLayout();
+            await this.loadedModalLayout();
         }
     }
 
